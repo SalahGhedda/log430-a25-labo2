@@ -31,7 +31,9 @@ jobs:
           echo "REDIS_DB=0" >> .env
 
       - name: Executer les tests
-        run: pytest
+        run: |
+          export PYTHONPATH=$PYTHONPATH:./src
+          pytest
       
   deploy:
     needs: test
