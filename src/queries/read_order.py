@@ -20,12 +20,58 @@ def get_orders_from_mysql(limit=9999):
 
 def get_orders_from_redis(limit=9999):
     """Get last X orders"""
-    # TODO: écrivez la méthode
-    print(limit)
-    return []
+    r = get_redis_conn()
+    keys = r.keys("order:*")
+
+    ids = sorted([int(k.decode().split(":")[1]) for k in keys if b":items" not in k], reverse=True)
+    ids = ids[:limit]
+
+    orders = []
+    for oid in ids:
+        data = r.hgetall(f"order:{oid}")
+        orders.append(Order(
+            id=int(data[b'id']),
+            user_id=int(data[b'user_id']),
+            total_amount=float(data[b'total_amount'])
+        ))
+    return orders
 
 def get_highest_spending_users():
     """Get report of best selling products"""
-    # TODO: écrivez la méthode
-    # triez le résultat par nombre de commandes (ordre décroissant)
-    return []
+    limit=10
+    r = get_redis_conn()
+    keys = r.keys("order:*")
+    spending = {}
+
+    for key in keys:
+        if b":items" in key:
+            continue
+        data = r.hgetall(key)
+        if not data:
+            continue
+        user_id = int(data[b"user_id"])
+        total = float(data[b"total_amount"])
+        spending[user_id] = spending.get(user_id, 0) + total
+
+    # Trier par montant dépensé décroissant
+    top_users = sorted(spending.items(), key=lambda x: x[1], reverse=True)
+    return top_users[:limit]
+
+def get_top_selling_products():
+    """Get report of best selling products"""
+    limit = 10
+    r = get_redis_conn()
+    keys = r.keys("order:*:items")
+    sales = {}
+
+    for key in keys:
+        items = r.lrange(key, 0, -1)  # ex: ["3|2", "5|1"]
+        for raw in items:
+            pid, qty = raw.decode().split("|")
+            pid = int(pid)
+            qty = int(qty)
+            sales[pid] = sales.get(pid, 0) + qty
+
+    # Trier par quantités vendues décroissantes
+    top_products = sorted(sales.items(), key=lambda x: x[1], reverse=True)
+    return top_products[:limit]

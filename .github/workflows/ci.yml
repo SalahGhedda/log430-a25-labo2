@@ -30,4 +30,21 @@ jobs:
           echo "REDIS_PORT=6379" >> .env
           echo "REDIS_DB=0" >> .env
 
+      - name: Executer les tests
+        run: pytest
+      
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass
+
+      - name: Deploy to VM
+        run: |
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            git clone https://github.com/SalahGhedda/log430-a25-labo2 || echo "Repo already cloned"
+            cd log430-a25-labo2
+            git pull
+          EOF
 
