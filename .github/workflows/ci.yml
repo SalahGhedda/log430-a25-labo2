@@ -48,7 +48,11 @@ jobs:
           echo "REDIS_HOST=127.0.0.1" >> .env
           echo "REDIS_PORT=6379" >> .env
           echo "REDIS_DB=0" >> .env
-
+      - name: Initialiser la base MySQL
+        run: |
+          sudo apt-get install -y mysql-client
+          sleep 10  # attendre que MySQL soit prêt
+          mysql -h 127.0.0.1 -P 3306 -u labo02 -plabo02 labo02_db < db-init/init.sql
       - name: Executer les tests
         run: |
           export PYTHONPATH=$PYTHONPATH:./src
