@@ -8,6 +8,25 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: labo02_db
+          MYSQL_USER: labo02
+          MYSQL_PASSWORD: labo02
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -34,19 +53,3 @@ jobs:
         run: |
           export PYTHONPATH=$PYTHONPATH:./src
           pytest
-      
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install sshpass
-        run: sudo apt-get install -y sshpass
-
-      - name: Deploy to VM
-        run: |
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            git clone https://github.com/SalahGhedda/log430-a25-labo2 || echo "Repo already cloned"
-            cd log430-a25-labo2
-            git pull
-          EOF
-

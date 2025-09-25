@@ -126,7 +126,7 @@ def sync_all_orders_to_redis():
     try:
         if len(orders_in_redis) == 0:
             # mysql
-            orders_from_mysql = []
+            orders_from_mysql = get_orders_from_mysql()
             for order in orders_from_mysql:
                 r.hset(f"order:{order.id}", mapping={
                     "id": order.id,

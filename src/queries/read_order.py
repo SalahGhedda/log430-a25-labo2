@@ -36,42 +36,38 @@ def get_orders_from_redis(limit=9999):
         ))
     return orders
 
-def get_highest_spending_users():
-    """Get report of best selling products"""
-    limit=10
+def get_highest_spending_users(limit=10):
+    """Get report of highest spending users"""
     r = get_redis_conn()
     keys = r.keys("order:*")
     spending = {}
 
     for key in keys:
-        if b":items" in key:
+        if ":items" in key:
             continue
         data = r.hgetall(key)
         if not data:
             continue
-        user_id = int(data[b"user_id"])
-        total = float(data[b"total_amount"])
+        user_id = int(data["user_id"])
+        total = float(data["total_amount"])
         spending[user_id] = spending.get(user_id, 0) + total
 
-    # Trier par montant dépensé décroissant
     top_users = sorted(spending.items(), key=lambda x: x[1], reverse=True)
     return top_users[:limit]
 
-def get_top_selling_products():
+def get_top_selling_products(limit=10):
     """Get report of best selling products"""
-    limit = 10
     r = get_redis_conn()
     keys = r.keys("order:*:items")
     sales = {}
 
     for key in keys:
-        items = r.lrange(key, 0, -1)  # ex: ["3|2", "5|1"]
+        items = r.lrange(key, 0, -1)
         for raw in items:
             pid, qty = raw.decode().split("|")
             pid = int(pid)
             qty = int(qty)
             sales[pid] = sales.get(pid, 0) + qty
 
-    # Trier par quantités vendues décroissantes
     top_products = sorted(sales.items(), key=lambda x: x[1], reverse=True)
     return top_products[:limit]
