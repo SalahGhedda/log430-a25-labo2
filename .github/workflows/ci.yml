@@ -61,12 +61,8 @@ jobs:
     needs: test
     runs-on: self-hosted
     steps:
-      - name: Install sshpass
-        run: sudo apt-get install -y sshpass
-      - name: Deploy to VM
+      - uses: actions/checkout@v4
+      - name: Mettre à jour le dépôt
         run: |
-          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            git clone https://github.com/SalahGhedda/log430-a25-labo2 || echo "Repo already cloned"
-            cd log430-a25-labo2
-            git pull
-          EOF
+          cd ~/log430-a25-labo2
+          git pull
