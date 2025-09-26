@@ -23,16 +23,23 @@ def get_orders_from_redis(limit=9999):
     r = get_redis_conn()
     keys = r.keys("order:*")
 
-    ids = sorted([int(k.decode().split(":")[1]) for k in keys if b":items" not in k], reverse=True)
-    ids = ids[:limit]
+    decoded_keys = [k.decode() if isinstance(k, bytes) else k for k in keys]
+    ids = sorted([
+        int(k.split(":")[1])
+        for k in decoded_keys
+        if ":items" not in k
+    ], reverse=True)[:limit]
 
     orders = []
     for oid in ids:
         data = r.hgetall(f"order:{oid}")
+        data = {k.decode() if isinstance(k, bytes) else k:
+                v.decode() if isinstance(v, bytes) else v
+                for k, v in data.items()}
         orders.append(Order(
-            id=int(data[b'id']),
-            user_id=int(data[b'user_id']),
-            total_amount=float(data[b'total_amount'])
+            id=int(data['id']),
+            user_id=int(data['user_id']),
+            total_amount=float(data['total_amount'])
         ))
     return orders
 
@@ -64,7 +71,9 @@ def get_top_selling_products(limit=10):
     for key in keys:
         items = r.lrange(key, 0, -1)
         for raw in items:
-            pid, qty = raw.decode().split("|")
+            if isinstance(raw, bytes):
+                raw = raw.decode()
+            pid, qty = raw.split("|")
             pid = int(pid)
             qty = int(qty)
             sales[pid] = sales.get(pid, 0) + qty
